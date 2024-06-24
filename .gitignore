@@ -1,0 +1,14 @@
+# Project exclude paths
+/.gradle/
+/Account Service (Java)/task/build/
+/Account Service (Java)/task/build/classes/java/build/
+/Account Service (Java)/task/build/generated/sources/annotationProcessor/java/build/
+/Account Service (Java)/task/build/generated/sources/headers/java/build/
+/Account Service (Java)/task/build/reports/tests/build/
+/Account Service (Java)/task/build/test-results/build/
+/Account Service (Java)/task/build/tmp/build/
+/Account Service (Java)/task/out/
+/Account Service (Java)/task/out/build/
+/Account Service (Java)/task/out/production/classes/
+/Account Service (Java)/task/out/test/classes/
+/util/build/
