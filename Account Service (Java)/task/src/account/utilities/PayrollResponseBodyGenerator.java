@@ -2,6 +2,7 @@ package account.utilities;
 
 import account.models.dto.PayrollDTO;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Builder;
 import lombok.Data;
 import org.slf4j.Logger;
@@ -100,6 +101,7 @@ public class PayrollResponseBodyGenerator {
         private String salary;
     }
 
+    @JsonSerialize
     private static class EmptyJSONBody {
 
     }
