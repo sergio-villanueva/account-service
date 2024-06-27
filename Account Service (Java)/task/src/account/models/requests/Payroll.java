@@ -13,7 +13,7 @@ public class Payroll {
     @NotBlank @AcmeEmail
     private String email;
     @JsonProperty("period")
-    @Pattern(regexp = "^(0?[1-9]|1[0-2])-(\\\\d{4})$")
+    @Pattern(regexp = "^(0?[1-9]|1[0-2])-(\\d{4})$")
     private String period;
     @JsonProperty("salary")
     @Min(0)

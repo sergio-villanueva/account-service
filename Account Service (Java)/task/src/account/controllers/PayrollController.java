@@ -43,7 +43,7 @@ public class PayrollController {
      * */
     @PostMapping("/acct/payments")
     @ResponseStatus(code = HttpStatus.OK)
-    public Object addPayrolls(@RequestBody List<Payroll> payrolls) {
+    public Object addPayrolls(@Valid @RequestBody List<Payroll> payrolls) {
         logger.info("start add payrolls journey");
         payrolls.forEach((validator::validate));
         logger.info("validation successful");

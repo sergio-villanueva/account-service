@@ -3,6 +3,7 @@ package account.controllers;
 import account.exceptions.*;
 import account.validations.ValidationMessages;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,6 +100,13 @@ public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
         logger.error("no such element exception: " + e.getMessage());
         return new ResponseEntity<>(buildExceptionalBody(HttpStatus.NOT_FOUND),
                 HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Object> handleConstraintViolationException(ConstraintViolationException e) {
+        logger.error("invalid arguments: " + e.getMessage());
+        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, request.getRequestURI(), e.getMessage()),
+                HttpStatus.BAD_REQUEST);
     }
 
     @Override
