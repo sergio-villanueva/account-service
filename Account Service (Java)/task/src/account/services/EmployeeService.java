@@ -1,14 +1,12 @@
 package account.services;
 
 import account.database.entities.EmployeeEntity;
-import account.database.repositories.BreachedPasswordRepository;
 import account.database.repositories.EmployeeRepository;
 import account.exceptions.EmailAlreadyExistsException;
 import account.exceptions.IdenticalPasswordsException;
+import account.models.dto.UserDTO;
 import account.models.requests.ChangePasswordRequest;
 import account.models.requests.Registration;
-import account.models.dto.UserDTO;
-import account.utilities.Endpoints;
 import account.validations.ValidationMessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,8 +27,6 @@ public class EmployeeService {
 
     private final EmployeeRepository employeeRepository;
 
-    private final BreachedPasswordRepository breachedPasswordRepository;
-
     private final CompromisedPasswordChecker compromisedPasswordChecker;
 
     private final PasswordEncoder passwordEncoder;
@@ -38,9 +34,8 @@ public class EmployeeService {
     private final Logger logger = LoggerFactory.getLogger(EmployeeService.class);
 
     @Autowired
-    public EmployeeService(EmployeeRepository employeeRepository, BreachedPasswordRepository breachedPasswordRepository, CompromisedPasswordChecker compromisedPasswordChecker, PasswordEncoder passwordEncoder) {
+    public EmployeeService(EmployeeRepository employeeRepository, CompromisedPasswordChecker compromisedPasswordChecker, PasswordEncoder passwordEncoder) {
         this.employeeRepository = employeeRepository;
-        this.breachedPasswordRepository = breachedPasswordRepository;
         this.compromisedPasswordChecker = compromisedPasswordChecker;
         this.passwordEncoder = passwordEncoder;
     }
@@ -53,30 +48,32 @@ public class EmployeeService {
 
         // STEP 1: Validate for breached password
         if (compromisedPasswordChecker.check(registration.getPassword()).isCompromised()) {
-            logger.error("new password IS breached");
+            logger.error(String.format("password: %s IS breached", registration.getPassword()));
             throw new CompromisedPasswordException("new password IS breached");
         }
-        logger.info("new password IS NOT breached");
+        logger.info(String.format("password: %s IS NOT breached", registration.getPassword()));
 
         // STEP 2: Check if email is already registered; Email should be case-insensitive
-        registration.setEmail(registration.getEmail().toLowerCase());
+        String originalEmail = registration.getEmail();
         if (employeeRepository.existsByEmailIgnoreCase(registration.getEmail())) {
-            logger.info("email is already associated with a user");
-            throw new EmailAlreadyExistsException("User exist!", Endpoints.SIGNUP);
+            logger.info(String.format("email: %s is already associated with a user", registration.getEmail()));
+            throw new EmailAlreadyExistsException("User exist!");
         }
 
         // STEP 3: Build entity
         EmployeeEntity employeeEntity = EmployeeEntity.builder()
                 .firstName(registration.getFirstName())
                 .lastName(registration.getLastName())
-                .email(registration.getEmail())
+                .email(registration.getEmail().toLowerCase())
                 .password(passwordEncoder.encode(registration.getPassword()))
                 .created(LocalDateTime.now())
                 .payrollEntities(new ArrayList<>())
                 .build();
 
         // Step 4: Save user in database and return DTO
-        return toUserDTO(employeeRepository.save(employeeEntity));
+        EmployeeEntity savedEntity = employeeRepository.save(employeeEntity);
+        savedEntity.setEmail(originalEmail);
+        return toUserDTO(savedEntity);
     }
 
     public UserDTO changePassword(UserDetails userDetails, ChangePasswordRequest request) {
