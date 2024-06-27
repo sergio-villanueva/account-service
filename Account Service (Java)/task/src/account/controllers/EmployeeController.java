@@ -2,7 +2,7 @@ package account.controllers;
 
 import account.models.requests.ChangePasswordRequest;
 import account.models.requests.Registration;
-import account.models.dto.UserDTO;
+import account.models.dto.EmployeeDTO;
 import account.services.EmployeeService;
 import account.utilities.RegistrationResponseBodyGenerator;
 import jakarta.validation.Valid;
@@ -36,7 +36,7 @@ public class EmployeeController {
     @ResponseStatus(code = HttpStatus.OK)
     public Object register(@Valid @RequestBody Registration registration) {
         logger.info("start registration journey");
-        UserDTO dto = employeeService.createUser(registration);
+        EmployeeDTO dto = employeeService.createUser(registration);
         logger.info("registration details saved successfully");
         return responseBodyGenerator.buildRegistrationResponseBody(dto);
     }
@@ -49,9 +49,9 @@ public class EmployeeController {
     public Object changePassword(@AuthenticationPrincipal UserDetails userDetails,
                                  @Valid @RequestBody ChangePasswordRequest request) {
         logger.info("start change password journey");
-        UserDTO userDTO = employeeService.changePassword(userDetails, request);
+        EmployeeDTO employeeDTO = employeeService.changePassword(userDetails, request);
         logger.info("new password successfully saved");
-        return responseBodyGenerator.buildChangePasswordResponseBody(userDTO);
+        return responseBodyGenerator.buildChangePasswordResponseBody(employeeDTO);
     }
 
 

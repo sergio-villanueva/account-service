@@ -1,6 +1,6 @@
 package account.utilities;
 
-import account.models.dto.UserDTO;
+import account.models.dto.EmployeeDTO;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class RegistrationResponseBodyGenerator {
-    public RegistrationResponseBody buildRegistrationResponseBody(UserDTO dto) {
+    public Object buildRegistrationResponseBody(EmployeeDTO dto) {
         return RegistrationResponseBody.builder()
                 .id(dto.getId())
                 .name(dto.getFirstName())
@@ -17,9 +17,9 @@ public class RegistrationResponseBodyGenerator {
                 .build();
     }
 
-    public ChangePasswordResponseBody buildChangePasswordResponseBody(UserDTO userDTO) {
+    public Object buildChangePasswordResponseBody(EmployeeDTO employeeDTO) {
         return ChangePasswordResponseBody.builder()
-                .email(userDTO.getEmail())
+                .email(employeeDTO.getEmail())
                 .status("The password has been updated successfully")
                 .build();
     }
