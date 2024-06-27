@@ -71,9 +71,36 @@ public class PayrollResponseBodyGenerator {
         return GetPayrollResponseBody.builder()
                 .firstName(payrollDTO.getFirstName())
                 .lastName(payrollDTO.getLastName())
-                .period(payrollDTO.getPeriod())
+                .period(toPeriodFormat(payrollDTO.getPeriod()))
                 .salary(toSalaryFormat(payrollDTO.getSalary()))
                 .build();
+    }
+
+    private String toPeriodFormat(String originalPeriod) {
+        String[] splitPeriod = originalPeriod.split("-");
+        String month = splitPeriod[0];
+        String year = splitPeriod[1];
+
+        String formattedPeriod = switch (month) {
+            case "01", "1" -> "January";
+            case "02", "2" -> "February";
+            case "03", "3" -> "March";
+            case "04", "4" -> "April";
+            case "05", "5" -> "May";
+            case "06", "6" -> "June";
+            case "07", "7" -> "July";
+            case "08", "8" -> "August";
+            case "09", "9" -> "September";
+            case "10" -> "October";
+            case "11" -> "November";
+            case "12" -> "December";
+            default -> "unavailable";
+        };
+        if ("unavailable".equals(formattedPeriod)) {
+            logger.error(String.format("invalid period %s found from database", month));
+        }
+
+        return String.format("%s-%s", formattedPeriod, year);
     }
 
     private String toSalaryFormat(Long salary) {
