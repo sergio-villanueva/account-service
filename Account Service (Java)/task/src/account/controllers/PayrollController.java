@@ -70,7 +70,7 @@ public class PayrollController {
     @GetMapping("/empl/payment")
     @ResponseStatus(code = HttpStatus.OK)
     public Object getPayroll(@AuthenticationPrincipal UserDetails userDetails,
-                             @RequestParam("period") String period) {
+                             @RequestParam(value = "period", required = false) String period) {
         logger.info("start get payroll journey");
         if (StringUtils.isNotBlank(period)) {
             // deliver payroll data for the given period only
