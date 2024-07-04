@@ -65,7 +65,7 @@ public class PayrollController {
     }
 
     /**
-     * The journey used for fetching payroll information for a given user
+     * The journey used for fetching payroll information for a given employee
      * */
     @GetMapping("/empl/payment")
     @ResponseStatus(code = HttpStatus.OK)

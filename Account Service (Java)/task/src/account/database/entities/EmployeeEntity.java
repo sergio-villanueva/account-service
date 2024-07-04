@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Getter @Setter
 @Builder
@@ -38,5 +40,8 @@ public class EmployeeEntity {
 
     @OneToMany(mappedBy = "employeeEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PayrollEntity> payrollEntities;
+
+    @OneToMany(mappedBy = "employeeEntity", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private Set<PermissionEntity> permissionEntities = new LinkedHashSet<>();
 
 }

@@ -174,7 +174,7 @@ public class PayrollService {
         EmployeeEntity employeeEntity = employeeRepository.findByEmailIgnoreCase(userDetails.getUsername())
                 .orElseThrow(() -> {
                     // should never execute
-                    logger.error("could not find user data despite passing authentication");
+                    logger.error("could not find employee data despite passing authentication");
                     return new UsernameNotFoundException("could not find user data despite passing authentication");
                 });
         // extract payroll info and return the required payroll period

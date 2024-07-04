@@ -1,17 +1,29 @@
 package account.configurations;
 
 import account.database.entities.EmployeeEntity;
+import account.database.entities.PermissionEntity;
 import account.database.repositories.BreachedPasswordRepository;
 import account.database.repositories.EmployeeRepository;
+import account.utilities.Role;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.Builder;
+import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.password.CompromisedPasswordChecker;
@@ -20,7 +32,10 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -32,7 +47,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Objects;
+
+import static account.utilities.Role.*;
 
 @Configuration
 public class SecurityConfig {
@@ -40,6 +59,7 @@ public class SecurityConfig {
     private final EmployeeRepository employeeRepository;
 
     private final BreachedPasswordRepository breachedPasswordRepository;
+
 
     @Autowired
     public SecurityConfig(EmployeeRepository employeeRepository, BreachedPasswordRepository breachedPasswordRepository) {
@@ -71,9 +91,12 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth  // manage access
                         .requestMatchers(HttpMethod.POST, "/api/auth/changepass").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/empl/payment").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/acct/payments").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/api/acct/payments").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/empl/payment").hasAnyAuthority(USER.getAuthority(), ACCOUNTANT.getAuthority())
+                        .requestMatchers(HttpMethod.POST, "/api/acct/payments").hasAuthority(ACCOUNTANT.getAuthority())
+                        .requestMatchers(HttpMethod.PUT, "/api/acct/payments").hasAuthority(ACCOUNTANT.getAuthority())
+                        .requestMatchers(HttpMethod.GET, "/api/admin/user/").hasAuthority(ADMINISTRATOR.getAuthority())
+                        .requestMatchers(HttpMethod.DELETE, "/api/admin/user/{email}").hasAuthority(ADMINISTRATOR.getAuthority())
+                        .requestMatchers(HttpMethod.PUT, "/api/admin/user/role").hasAuthority(ADMINISTRATOR.getAuthority())
 
                         .requestMatchers("/error/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll() // enable for testing purposes
@@ -123,7 +146,11 @@ public class SecurityConfig {
             return User.builder()
                     .username(entity.getEmail())
                     .password(entity.getPassword())
-                    .roles("ADMINISTRATOR")
+                    .authorities(entity.getPermissionEntities().stream()
+                            .map(PermissionEntity::getRole)
+                            .map(Role::getAuthority)
+                            .map(SimpleGrantedAuthority::new)
+                            .toList())
                     .build();
         }
     }
@@ -173,10 +200,57 @@ public class SecurityConfig {
 
         @Override
         public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException, ServletException {
-            logger.error("authenticated client attempted to access unauthorized resources");
-            logger.error(Arrays.toString(accessDeniedException.getStackTrace()));
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, accessDeniedException.getMessage());
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (Objects.nonNull(auth)) {
+                logger.warn(String.format("authenticated user: %s attempted to access unauthorized resource: %s", auth.getName(), request.getRequestURI()));
+            } else {
+                logger.error(String.format("unauthenticated user attempted to access protected resource: %s", request.getRequestURI()));
+            }
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write(buildResponseBody(request));
+            response.getWriter().close();
         }
+
+        private String buildResponseBody(HttpServletRequest request) {
+            // build response object
+            ResponseBody body = ResponseBody.builder()
+                    .timestamp(LocalDateTime.now())
+                    .status(HttpStatus.FORBIDDEN.value())
+                    .error(HttpStatus.FORBIDDEN.getReasonPhrase())
+                    .message("Access Denied!")
+                    .path(request.getRequestURI())
+                    .build();
+            // build json mapper
+            ObjectMapper objectMapper = JsonMapper.builder()
+                    .addModule(new JavaTimeModule())
+                    .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                    .build();
+            // convert to json
+            try {
+                return objectMapper.writeValueAsString(body);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+
+        }
+
+        @Data
+        @Builder
+        @JsonPropertyOrder({"timestamp", "status", "error", "message", "path"})
+        private static class ResponseBody {
+            @JsonProperty("timestamp")
+            private LocalDateTime timestamp;
+            @JsonProperty("status")
+            private int status;
+            @JsonProperty("error")
+            private String error;
+            @JsonProperty("message")
+            private String message;
+            @JsonProperty("path")
+            private String path;
+        }
+
     }
 
 

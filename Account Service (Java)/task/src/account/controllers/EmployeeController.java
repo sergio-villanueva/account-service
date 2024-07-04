@@ -1,11 +1,13 @@
 package account.controllers;
 
-import account.models.requests.ChangePasswordRequest;
-import account.models.requests.Registration;
 import account.models.dto.EmployeeDTO;
+import account.models.requests.ChangePasswordRequest;
+import account.models.requests.ModifyRoleRequest;
+import account.models.requests.Registration;
 import account.services.EmployeeService;
-import account.utilities.RegistrationResponseBodyGenerator;
+import account.utilities.EmployeeResponseBodyGenerator;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,28 +17,30 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("/api/auth") @Validated
+@RequestMapping("/api") @Validated
 public class EmployeeController {
 
     private final Logger logger = LoggerFactory.getLogger(EmployeeController.class);
     private final EmployeeService employeeService;
-    private final RegistrationResponseBodyGenerator responseBodyGenerator;
+    private final EmployeeResponseBodyGenerator responseBodyGenerator;
 
     @Autowired
-    public EmployeeController(EmployeeService employeeService, RegistrationResponseBodyGenerator responseBodyGenerator) {
+    public EmployeeController(EmployeeService employeeService, EmployeeResponseBodyGenerator responseBodyGenerator) {
         this.employeeService = employeeService;
         this.responseBodyGenerator = responseBodyGenerator;
     }
 
     /**
-     * The journey used for registering a user to the account service platform
+     * The journey used for registering an employee to the account service platform
      * */
-    @PostMapping("/signup")
+    @PostMapping("/auth/signup")
     @ResponseStatus(code = HttpStatus.OK)
     public Object register(@Valid @RequestBody Registration registration) {
-        logger.info("start registration journey");
-        EmployeeDTO dto = employeeService.createUser(registration);
+        logger.info(String.format("start registration journey for employee: %s", registration.getEmail()));
+        EmployeeDTO dto = employeeService.createEmployee(registration);
         logger.info("registration details saved successfully");
         return responseBodyGenerator.buildRegistrationResponseBody(dto);
     }
@@ -44,15 +48,47 @@ public class EmployeeController {
     /**
      * The journey used for changing passwords
      * */
-    @PostMapping("/changepass")
+    @PostMapping("/auth/changepass")
     @ResponseStatus(code = HttpStatus.OK)
     public Object changePassword(@AuthenticationPrincipal UserDetails userDetails,
                                  @Valid @RequestBody ChangePasswordRequest request) {
-        logger.info("start change password journey");
+        logger.info(String.format("start change password journey for employee: %s", userDetails.getUsername()));
         EmployeeDTO employeeDTO = employeeService.changePassword(userDetails, request);
         logger.info("new password successfully saved");
         return responseBodyGenerator.buildChangePasswordResponseBody(employeeDTO);
     }
 
+    /**
+     * The journey used to obtain information on all employees
+     * */
+    @GetMapping("/admin/user/")
+    @ResponseStatus(code = HttpStatus.OK)
+    public Object retrieveAll() {
+        logger.info("start retrieve all employees journey");
+        List<EmployeeDTO> employeeDTOS = employeeService.retrieveEmployees();
+        logger.info("successfully retrieved all employee information");
+        return responseBodyGenerator.buildRetrieveAllResponseBody(employeeDTOS);
+    }
 
+    @PutMapping("/admin/user/role")
+    @ResponseStatus(code = HttpStatus.OK)
+    public Object modifyRole(@AuthenticationPrincipal UserDetails adminDetails,
+                             @Valid @RequestBody ModifyRoleRequest modifyRoleRequest) {
+        logger.info("start modify employee role journey");
+        EmployeeDTO employeeDTO = employeeService.updateEmployeeRole(adminDetails, modifyRoleRequest);
+        logger.info(String.format("successfully updated employee role with %s operation", modifyRoleRequest.getOperation()));
+        return responseBodyGenerator.buildModifyRoleResponseBody(employeeDTO);
+    }
+
+    /**
+     * The journey used to delete an employee
+     * */
+    @DeleteMapping("/admin/user/{email}")
+    @ResponseStatus(code = HttpStatus.OK)
+    public Object delete(@PathVariable("email") @NotBlank String email) {
+        logger.info("start delete employee journey");
+        employeeService.deleteEmployee(email);
+        logger.info(String.format("successfully deleted employee: %s", email));
+        return responseBodyGenerator.buildDeleteResponseBody(email);
+    }
 }

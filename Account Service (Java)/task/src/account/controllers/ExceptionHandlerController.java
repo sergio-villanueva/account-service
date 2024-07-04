@@ -38,24 +38,71 @@ public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
         this.request = request;
     }
 
+    @ExceptionHandler(RemoveRoleNotFoundException.class)
+    public ResponseEntity<Object> handleRemoveRoleNotFoundException(RemoveRoleNotFoundException e) {
+        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, e.getMessage()),
+                HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(RemoveLastRoleException.class)
+    public ResponseEntity<Object> handleRemoveLastRoleException(RemoveLastRoleException e) {
+        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, e.getMessage()),
+                HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(RemoveAdminException.class)
+    public ResponseEntity<Object> handleRemoveAdminException(RemoveAdminException e) {
+        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, e.getMessage()),
+                HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(InvalidRoleException.class)
+    public ResponseEntity<Object> handleInvalidRoleException(InvalidRoleException e) {
+        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.NOT_FOUND, e.getMessage()),
+                HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(GrantAdminRoleException.class)
+    public ResponseEntity<Object> handleGrantAdminRoleException(GrantAdminRoleException e) {
+        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, e.getMessage()),
+                HttpStatus.BAD_REQUEST);
+    }
+    @ExceptionHandler(GrantBusinessRoleException.class)
+    public ResponseEntity<Object> handleGrantBusinessRoleException(GrantBusinessRoleException e) {
+        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, e.getMessage()),
+                HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(DeleteAdminException.class)
+    public ResponseEntity<Object> handleDeleteAdminException(DeleteAdminException e) {
+        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, e.getMessage()),
+                HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(EmployeeNotFoundException.class)
+    public ResponseEntity<Object> handleEmployeeNotFoundException(EmployeeNotFoundException e) {
+        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.NOT_FOUND, e.getMessage()),
+                HttpStatus.NOT_FOUND);
+    }
+
     @ExceptionHandler(EmailDoesNotExistException.class)
     public ResponseEntity<Object> handleEmailDoesNotExistException(EmailDoesNotExistException e) {
         logger.error("employee email does not exist: " + e.getMessage());
-        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, request.getRequestURI(), e.getMessage()),
+        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, e.getMessage()),
                 HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(PeriodAlreadyExistsException.class)
     public ResponseEntity<Object> handlePeriodAlreadyExistsException(PeriodAlreadyExistsException e) {
         logger.error("employee period already exists: " + e.getMessage());
-        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, request.getRequestURI(), e.getMessage()),
+        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, e.getMessage()),
                 HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(PeriodDoesNotExistException.class)
     public ResponseEntity<Object> handlePeriodDoesNotExistException(PeriodDoesNotExistException e) {
         logger.error("employee period does not exist: " + e.getMessage());
-        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, request.getRequestURI(), e.getMessage()),
+        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, e.getMessage()),
                 HttpStatus.BAD_REQUEST);
     }
 
@@ -63,21 +110,21 @@ public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleCompromisedPasswordException(CompromisedPasswordException e) {
         // requirement today is to response w/ 400 bad request
         logger.error("compromised password exception: " + e.getMessage());
-        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, request.getRequestURI(), ValidationMessages.BREACHED_PASSWORD),
+        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, ValidationMessages.BREACHED_PASSWORD),
                 HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(IdenticalPasswordsException.class)
     public ResponseEntity<Object> handleIdenticalPasswordsException(IdenticalPasswordsException e) {
         logger.error("identical passwords exception: " + e.getMessage());
-        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, request.getRequestURI(), e.getMessage()),
+        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, e.getMessage()),
                 HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<Object> handleEmailAlreadyExistsException(EmailAlreadyExistsException e) {
         logger.error("email already exists exception: " + e.getMessage());
-        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, request.getRequestURI(), e.getMessage()),
+        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, e.getMessage()),
                 HttpStatus.BAD_REQUEST);
     }
 
@@ -91,7 +138,7 @@ public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Object> handleBadCredentialsException(BadCredentialsException e) {
         logger.error("bad credentials exception: " + e.getMessage());
-        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.UNAUTHORIZED, request.getRequestURI(),""),
+        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.UNAUTHORIZED, ""),
                 HttpStatus.UNAUTHORIZED);
     }
 
@@ -105,7 +152,7 @@ public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Object> handleConstraintViolationException(ConstraintViolationException e) {
         logger.error("invalid arguments: " + e.getMessage());
-        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, request.getRequestURI(), e.getMessage()),
+        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, e.getMessage()),
                 HttpStatus.BAD_REQUEST);
     }
 
@@ -116,7 +163,7 @@ public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
         String message = ex.getBindingResult().getFieldErrors().stream().findFirst().map(FieldError::getDefaultMessage).orElse(null);
         // extracted the detailed message defined from bean annotation; never extracts null
         logger.error("an argument is not valid: " + ex.getMessage());
-        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, request.getRequestURI(), message),
+        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, message),
                 HttpStatus.BAD_REQUEST);
     }
 
@@ -134,10 +181,10 @@ public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
         return body;
     }
 
-    private Map<String, Object> buildBodyWithMessage(HttpStatus status, String endpoint, String message) {
+    private Map<String, Object> buildBodyWithMessage(HttpStatus status, String message) {
         Map<String, Object> body = buildExceptionalBody(status);
         body.put("message", message);
-        body.put("path", endpoint);
+        body.put("path", request.getRequestURI());
         return body;
     }
 
