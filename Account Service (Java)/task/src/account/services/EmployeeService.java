@@ -88,6 +88,11 @@ public class EmployeeService {
         return toEmployeeDTO(savedEntity);
     }
 
+    /** Changes the password for a given employee
+     * @param userDetails the employee's authenticated user details
+     * @param request the request object containing the new password
+     * @return {@code EmployeeDTO}
+     * */
     public EmployeeDTO changePassword(UserDetails userDetails, ChangePasswordRequest request) {
         // STEP 1: Check if new password is compromised
         logger.info("checking if new password is compromised");
@@ -136,6 +141,9 @@ public class EmployeeService {
                 .build();
     }
 
+    /** Fetches list of all employees
+     * @return {@code List<EmployeeDTO>}
+     * */
     public List<EmployeeDTO> retrieveEmployees() {
         return employeeRepository.findAll().stream()
                 .map(this::toEmployeeDTO)
@@ -310,6 +318,9 @@ public class EmployeeService {
 
     }
 
+    /** Deletes a given employee
+     * @param email the email of the employee to be deleted
+     * */
     public void deleteEmployee(String email) {
         Optional<EmployeeEntity> optionalEmployeeEntity = employeeRepository.findByEmailIgnoreCase(email);
 

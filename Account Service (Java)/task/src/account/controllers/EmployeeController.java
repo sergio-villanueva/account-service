@@ -70,6 +70,9 @@ public class EmployeeController {
         return responseBodyGenerator.buildRetrieveAllResponseBody(employeeDTOS);
     }
 
+    /**
+     * The journey used by an administrator to modify the role of an employee
+     * */
     @PutMapping("/admin/user/role")
     @ResponseStatus(code = HttpStatus.OK)
     public Object modifyRole(@AuthenticationPrincipal UserDetails adminDetails,

@@ -20,10 +20,13 @@ public class TestDataConfig {
 
     @Bean
     public ApplicationListener<ApplicationReadyEvent> testDataLoader() {
-        return new TestDataLoader();
+        return new LoadTestDataListener();
     }
 
-    private class TestDataLoader implements ApplicationListener<ApplicationReadyEvent> {
+    /**
+     * The listener used to load test data by waiting for application startup
+     * */
+    private class LoadTestDataListener implements ApplicationListener<ApplicationReadyEvent> {
 
         @Override
         public void onApplicationEvent(ApplicationReadyEvent event) {

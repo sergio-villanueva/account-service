@@ -77,6 +77,10 @@ public class SecurityConfig {
         return new BreachedPasswordChecker();
     }
 
+    /**
+     * Configure the filter chain for all requests in Spring Security.
+     * This chain is called by FilterChainProxy.java within the framework
+     * */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -155,6 +159,8 @@ public class SecurityConfig {
         }
     }
 
+    /**This class is used to check if the client-provided password is compromised or not
+     * */
     private class BreachedPasswordChecker implements CompromisedPasswordChecker {
 
         private static final Logger logger = LoggerFactory.getLogger(BreachedPasswordChecker.class);

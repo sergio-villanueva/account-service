@@ -111,7 +111,7 @@ public class PayrollService {
     }
 
     /**
-     * This method is used to modify an existing payroll
+     * This method is used to modify salary of an existing payroll
      * @param payroll the payroll whose salary is expected to update
      * */
     public void modifyPayrollSalary(Payroll payroll) {
