@@ -1,4 +1,4 @@
-package account.utilities;
+package account.view_generators;
 
 import account.models.dto.PayrollDTO;
 import com.fasterxml.jackson.annotation.JsonProperty;

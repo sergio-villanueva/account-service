@@ -1,6 +1,9 @@
-package account.utilities;
+package account.view_generators;
 
 import account.models.dto.EmployeeDTO;
+import account.models.dto.EventDTO;
+import account.models.requests.ModifyAccessRequest;
+import account.utilities.Role;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
