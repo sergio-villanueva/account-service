@@ -1,4 +1,4 @@
-package account.view_generators;
+package account.generators;
 
 import account.models.dto.EmployeeDTO;
 import account.models.dto.EventDTO;
@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,7 +26,7 @@ public class EmployeeResponseBodyGenerator {
                 .build();
     }
 
-    public Object buildRetrieveAllResponseBody(List<EmployeeDTO> employeeDTOS) {
+    public Object buildRetrieveEmployeesResponseBody(List<EmployeeDTO> employeeDTOS) {
         return employeeDTOS.stream()
                 .sorted(Comparator.comparing(EmployeeDTO::getId))
                 .map(this::toRegistrationResponseBody)
@@ -41,6 +42,33 @@ public class EmployeeResponseBodyGenerator {
 
     public Object buildModifyRoleResponseBody(EmployeeDTO employeeDTO) {
         return toRegistrationResponseBody(employeeDTO);
+    }
+
+    public Object buildModifyAccessResponseBody(ModifyAccessRequest modifyAccessRequest) {
+        String operation = "LOCK".equalsIgnoreCase(modifyAccessRequest.getOperation()) ?
+                "locked" : "UNLOCK".equalsIgnoreCase(modifyAccessRequest.getOperation()) ?
+                "unlocked" : null;
+        return ModifyAccessResponseBody.builder()
+                .status(String.format("User %s %s!",
+                        modifyAccessRequest.getEmail(),
+                        operation))
+                .build();
+    }
+
+    public Object buildRetrieveEventsResponseBody(List<EventDTO> eventDTOS) {
+        return eventDTOS.stream()
+                .map(this::toEventResponseItem)
+                .toArray();
+    }
+
+    private EventResponseItem toEventResponseItem(EventDTO dto) {
+        return EventResponseItem.builder()
+                .date(dto.getDate())
+                .eventType(dto.getEventType())
+                .subject(dto.getSubject())
+                .object(dto.getObject())
+                .path(dto.getPath())
+                .build();
     }
 
     private RegistrationResponseBody toRegistrationResponseBody(EmployeeDTO dto) {
@@ -84,5 +112,27 @@ public class EmployeeResponseBodyGenerator {
         private String email;
         @JsonProperty("status")
         private String status;
+    }
+
+    @Data
+    @Builder
+    private static class ModifyAccessResponseBody {
+        @JsonProperty("status")
+        private String status;
+    }
+
+    @Data
+    @Builder
+    private static class EventResponseItem {
+        @JsonProperty("date")
+        private LocalDateTime date;
+        @JsonProperty("action")
+        private String eventType;
+        @JsonProperty("subject")
+        private String subject;
+        @JsonProperty("object")
+        private String object;
+        @JsonProperty("path")
+        private String path;
     }
 }

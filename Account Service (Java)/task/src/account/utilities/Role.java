@@ -8,7 +8,8 @@ import java.util.Objects;
 public enum Role {
     USER("ROLE_USER", "USER"),
     ACCOUNTANT("ROLE_ACCOUNTANT", "ACCOUNTANT"),
-    ADMINISTRATOR("ROLE_ADMINISTRATOR", "ADMINISTRATOR");
+    ADMINISTRATOR("ROLE_ADMINISTRATOR", "ADMINISTRATOR"),
+    AUDITOR("ROLE_AUDITOR", "AUDITOR");
 
     private final String authority;
     private final String role;
@@ -28,5 +29,13 @@ public enum Role {
 
     public static boolean isStringRoleValid(String stringRole) {
         return Objects.nonNull(findByStringRoleNullable(stringRole));
+    }
+
+    public static boolean isBusinessRole(Role role) {
+        return USER.equals(role) || ACCOUNTANT.equals(role) || AUDITOR.equals(role);
+    }
+
+    public static boolean isAdminRole(Role role) {
+        return ADMINISTRATOR.equals(role);
     }
 }

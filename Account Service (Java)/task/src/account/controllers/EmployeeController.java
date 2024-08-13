@@ -1,11 +1,13 @@
 package account.controllers;
 
 import account.models.dto.EmployeeDTO;
+import account.models.dto.EventDTO;
 import account.models.requests.ChangePasswordRequest;
+import account.models.requests.ModifyAccessRequest;
 import account.models.requests.ModifyRoleRequest;
 import account.models.requests.Registration;
 import account.services.EmployeeService;
-import account.utilities.EmployeeResponseBodyGenerator;
+import account.generators.EmployeeResponseBodyGenerator;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.slf4j.Logger;
@@ -63,11 +65,23 @@ public class EmployeeController {
      * */
     @GetMapping("/admin/user/")
     @ResponseStatus(code = HttpStatus.OK)
-    public Object retrieveAll() {
+    public Object retrieveAllEmployees() {
         logger.info("start retrieve all employees journey");
         List<EmployeeDTO> employeeDTOS = employeeService.retrieveEmployees();
         logger.info("successfully retrieved all employee information");
-        return responseBodyGenerator.buildRetrieveAllResponseBody(employeeDTOS);
+        return responseBodyGenerator.buildRetrieveEmployeesResponseBody(employeeDTOS);
+    }
+
+    /**
+     * The journey used to obtain all events for an auditor
+     * */
+    @GetMapping("/security/events/")
+    @ResponseStatus(code = HttpStatus.OK)
+    public Object retrieveAllEvents() {
+        logger.info("start retrieve all events journey");
+        List<EventDTO> eventDTOS = employeeService.retrieveEvents();
+        logger.info("successfully retrieved all event information");
+        return responseBodyGenerator.buildRetrieveEventsResponseBody(eventDTOS);
     }
 
     /**
@@ -83,15 +97,25 @@ public class EmployeeController {
         return responseBodyGenerator.buildModifyRoleResponseBody(employeeDTO);
     }
 
+    @PutMapping("/admin/user/access")
+    @ResponseStatus(code = HttpStatus.OK)
+    public Object modifyAccess(@Valid @RequestBody ModifyAccessRequest modifyAccessRequest) {
+        logger.info("start modify employee access journey");
+        employeeService.modifyEmployeeAccess(modifyAccessRequest);
+        logger.info(String.format("successfully modified employee access for %s", modifyAccessRequest.getEmail()));
+        return responseBodyGenerator.buildModifyAccessResponseBody(modifyAccessRequest);
+    }
+
     /**
      * The journey used to delete an employee
      * */
     @DeleteMapping("/admin/user/{email}")
     @ResponseStatus(code = HttpStatus.OK)
-    public Object delete(@PathVariable("email") @NotBlank String email) {
+    public Object delete(@AuthenticationPrincipal UserDetails userDetails,
+                         @PathVariable("email") @NotBlank String employeeEmail) {
         logger.info("start delete employee journey");
-        employeeService.deleteEmployee(email);
-        logger.info(String.format("successfully deleted employee: %s", email));
-        return responseBodyGenerator.buildDeleteResponseBody(email);
+        employeeService.deleteEmployee(userDetails.getUsername(), employeeEmail);
+        logger.info(String.format("successfully deleted employee: %s", employeeEmail));
+        return responseBodyGenerator.buildDeleteResponseBody(employeeEmail);
     }
 }

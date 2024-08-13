@@ -3,7 +3,7 @@ package account.controllers;
 import account.models.dto.PayrollDTO;
 import account.models.requests.Payroll;
 import account.services.PayrollService;
-import account.view_generators.PayrollResponseBodyGenerator;
+import account.generators.PayrollResponseBodyGenerator;
 import io.micrometer.common.util.StringUtils;
 import jakarta.validation.Valid;
 import jakarta.validation.Validator;

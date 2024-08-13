@@ -31,11 +31,17 @@ public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
 
     private final HttpServletRequest request;
 
-    private final Logger logger = LoggerFactory.getLogger(ExceptionHandlerController.class);
+    private final HttpServletRequest httpServletRequest;
 
     @Autowired
-    public ExceptionHandlerController(HttpServletRequest request) {
-        this.request = request;
+    public ExceptionHandlerController(HttpServletRequest httpServletRequest) {
+        this.httpServletRequest = httpServletRequest;
+    }
+
+    @ExceptionHandler(ModifyAdminAccessException.class)
+    public ResponseEntity<Object> handleModifyAdminAccessException(ModifyAdminAccessException e) {
+        return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, e.getMessage()),
+                HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(RemoveRoleNotFoundException.class)
@@ -67,6 +73,7 @@ public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, e.getMessage()),
                 HttpStatus.BAD_REQUEST);
     }
+
     @ExceptionHandler(GrantBusinessRoleException.class)
     public ResponseEntity<Object> handleGrantBusinessRoleException(GrantBusinessRoleException e) {
         return new ResponseEntity<>(buildBodyWithMessage(HttpStatus.BAD_REQUEST, e.getMessage()),
@@ -175,16 +182,10 @@ public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
         return body;
     }
 
-    private Map<String, Object> buildGenericBody(HttpStatus status, String endpoint) {
-        Map<String, Object> body = buildExceptionalBody(status);
-        body.put("path", endpoint);
-        return body;
-    }
-
     private Map<String, Object> buildBodyWithMessage(HttpStatus status, String message) {
         Map<String, Object> body = buildExceptionalBody(status);
         body.put("message", message);
-        body.put("path", request.getRequestURI());
+        body.put("path", httpServletRequest.getRequestURI());
         return body;
     }
 

@@ -38,9 +38,14 @@ public class EmployeeEntity {
     @Column(name = "updated_timestamp")
     private LocalDateTime updated;
 
+    @Builder.Default
+    @Column(name = "lock_flag", nullable = false)
+    private Boolean lockFlag = false;
+
     @OneToMany(mappedBy = "employeeEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PayrollEntity> payrollEntities;
 
+    @Builder.Default
     @OneToMany(mappedBy = "employeeEntity", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private Set<PermissionEntity> permissionEntities = new LinkedHashSet<>();
 

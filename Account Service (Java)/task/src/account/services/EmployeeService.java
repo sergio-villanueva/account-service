@@ -1,13 +1,18 @@
 package account.services;
 
+import account.database.entities.CommonEventEntity;
 import account.database.entities.EmployeeEntity;
 import account.database.entities.PermissionEntity;
+import account.database.repositories.CommonEventRepository;
 import account.database.repositories.EmployeeRepository;
 import account.exceptions.*;
 import account.models.dto.EmployeeDTO;
+import account.models.dto.EventDTO;
 import account.models.requests.ChangePasswordRequest;
+import account.models.requests.ModifyAccessRequest;
 import account.models.requests.ModifyRoleRequest;
 import account.models.requests.Registration;
+import account.publishers.JourneyEventPublisher;
 import account.utilities.Role;
 import account.validations.ValidationMessages;
 import org.slf4j.Logger;
@@ -35,13 +40,19 @@ public class EmployeeService {
 
     private final PasswordEncoder passwordEncoder;
 
+    private final JourneyEventPublisher journeyEventPublisher;
+
+    private final CommonEventRepository commonEventRepository;
+
     private final Logger logger = LoggerFactory.getLogger(EmployeeService.class);
 
     @Autowired
-    public EmployeeService(EmployeeRepository employeeRepository, CompromisedPasswordChecker compromisedPasswordChecker, PasswordEncoder passwordEncoder) {
+    public EmployeeService(EmployeeRepository employeeRepository, CompromisedPasswordChecker compromisedPasswordChecker, PasswordEncoder passwordEncoder, JourneyEventPublisher journeyEventPublisher, CommonEventRepository commonEventRepository) {
         this.employeeRepository = employeeRepository;
         this.compromisedPasswordChecker = compromisedPasswordChecker;
         this.passwordEncoder = passwordEncoder;
+        this.journeyEventPublisher = journeyEventPublisher;
+        this.commonEventRepository = commonEventRepository;
     }
 
     /** Saves the registration details into the database
@@ -76,6 +87,7 @@ public class EmployeeService {
                 .email(registration.getEmail().toLowerCase())
                 .password(passwordEncoder.encode(registration.getPassword()))
                 .created(LocalDateTime.now())
+                .lockFlag(Boolean.FALSE)
                 .payrollEntities(new ArrayList<>())
                 .permissionEntities(new HashSet<>(Set.of(permissionEntity)))
                 .build();
@@ -85,6 +97,10 @@ public class EmployeeService {
         // Step 5: Save employee in database and return DTO
         EmployeeEntity savedEntity = employeeRepository.save(employeeEntity);
         savedEntity.setEmail(originalEmail);
+
+        // Step 6: Publish create employee event
+        journeyEventPublisher.publishCreateEmployeeEvent(registration.getEmail().toLowerCase());
+
         return toEmployeeDTO(savedEntity);
     }
 
@@ -120,7 +136,10 @@ public class EmployeeService {
             logger.info("new password is saved");
         });
 
-        // STEP 5: Return user data to form response
+        // STEP 5: Publish change password event
+        journeyEventPublisher.publishChangePasswordEvent(userDetails.getUsername());
+
+        // STEP 6: Return user data to form response
         return toEmployeeDTO(optionalEmployeeEntity.orElseThrow(() -> {
             // this case should never execute as user has already authenticated
             logger.error("could not find user data despite passing authentication");
@@ -150,6 +169,26 @@ public class EmployeeService {
                 .toList();
     }
 
+    /** Fetches list of all events sorted in ascending order by id
+     * @return {@code List<EventDTO>}
+     * */
+    public List<EventDTO> retrieveEvents() {
+        return commonEventRepository.findAll().stream()
+                .sorted(Comparator.comparing(CommonEventEntity::getId))
+                .map(this::toEventDTO)
+                .toList();
+    }
+
+    private EventDTO toEventDTO(CommonEventEntity entity) {
+        return EventDTO.builder()
+                .date(entity.getCreated())
+                .eventType(entity.getEventType())
+                .subject(entity.getSubject())
+                .object(entity.getObject())
+                .path(entity.getPath())
+                .build();
+    }
+
     /**
      * Modifies the role permissions for a given employee in the database
      *
@@ -175,7 +214,7 @@ public class EmployeeService {
 
         if ("GRANT".equalsIgnoreCase(modifyRoleRequest.getOperation())) {
             // STEP: If operation is GRANT
-            return grantEmployeeRole(modifyRoleRequest.getEmail(), modifyRoleRequest.getRole());
+            return grantEmployeeRole(adminDetails.getUsername(), modifyRoleRequest.getEmail(), modifyRoleRequest.getRole());
         } else if ("REMOVE".equalsIgnoreCase(modifyRoleRequest.getOperation())) {
             // STEP: If operation is REMOVE
             return removeEmployeeRole(adminDetails.getUsername(), modifyRoleRequest.getEmail(), modifyRoleRequest.getRole());
@@ -211,12 +250,15 @@ public class EmployeeService {
             employeeEntity.getPermissionEntities().remove(permissionEntity);
 
         });
-        //STEP 6: Update database and Convert entity -> dto and return
+        //STEP 6: Update database and Convert entity -> dto
         logger.info(String.format("updating %s permissions", employeeEmail));
-        return toEmployeeDTO(employeeRepository.save(optionalEmployee.orElseThrow(() -> {
+        EmployeeDTO dto = toEmployeeDTO(employeeRepository.save(optionalEmployee.orElseThrow(() -> {
             logger.error(String.format("employee: %s was not found", employeeEmail));
             return new EmployeeNotFoundException("User not found!");
         })));
+        // STEP 7: Publish remove role event
+        journeyEventPublisher.publishRemoveRoleEvent(adminEmail, employeeEmail, requestedRole);
+        return dto;
 
     }
 
@@ -241,30 +283,30 @@ public class EmployeeService {
 
     }
 
-    private EmployeeDTO grantEmployeeRole(String email, String requestedRole) {
+    private EmployeeDTO grantEmployeeRole(String adminEmail, String employeeEmail, String requestedRole) {
         //STEP 1: Fetch employee database info
-        Optional<EmployeeEntity> optionalEmployee = employeeRepository.findByEmailIgnoreCase(email);
+        Optional<EmployeeEntity> optionalEmployee = employeeRepository.findByEmailIgnoreCase(employeeEmail);
 
         //STEP 2: Check if grant request violates any business rules
         boolean duplicateRoleFlag = false;
         EmployeeEntity employeeEntity = optionalEmployee.orElseThrow(() -> {
             // we already check if employee existed so this case should always be false
-            logger.error(String.format("employee: %s was not found", email));
+            logger.error(String.format("employee: %s was not found", employeeEmail));
             return new EmployeeNotFoundException("User not found!");
         });
 
         for (PermissionEntity permissionEntity : employeeEntity.getPermissionEntities()) {
             //STEP 3: Perform business rules on grant request
-            checkGrantViolations(permissionEntity, email, requestedRole);
+            checkGrantViolations(permissionEntity, employeeEmail, requestedRole);
             //STEP 4: Mark if role is already granted
             if (checkGrantDuplicateRole(permissionEntity, requestedRole)) {
-                logger.warn(String.format("employee: %s already contains the role: %s", email, requestedRole));
+                logger.warn(String.format("employee: %s already contains the role: %s", employeeEmail, requestedRole));
                 duplicateRoleFlag = true;
                 break;
             }
         }
         logger.info(String.format("successfully validated grant request for employee: %s and role: %s",
-                email, requestedRole));
+                employeeEmail, requestedRole));
 
         //STEP 5: Skip grant operation if role already exists
         if (duplicateRoleFlag) {
@@ -280,9 +322,13 @@ public class EmployeeService {
             // relink the permissions list with the employee
         employeeEntity.getPermissionEntities().add(permissionEntity);
 
-        //STEP 7: Convert entity -> dto and return
-        logger.info(String.format("updating %s permissions", email));
-        return toEmployeeDTO(employeeRepository.save(employeeEntity));
+        //STEP 7: Convert entity -> dto
+        logger.info(String.format("updating %s permissions", employeeEmail));
+        EmployeeDTO dto = toEmployeeDTO(employeeRepository.save(employeeEntity));
+
+        // STEP 8: Publish grant role event
+        journeyEventPublisher.publishGrantRoleEvent(adminEmail, employeeEmail, requestedRole);
+        return dto;
     }
 
     private boolean checkGrantDuplicateRole(PermissionEntity permissionEntity, String requestedRole) {
@@ -300,8 +346,8 @@ public class EmployeeService {
 
         Role role = Role.findByStringRoleNullable(requestedRole);
         // check if admin is requesting for business role indicator
-        boolean adminViolationFlag = ADMINISTRATOR.equals(permissionEntity.getRole())
-                && (USER.equals(role) || ACCOUNTANT.equals(role));
+        boolean adminViolationFlag = Role.isAdminRole(permissionEntity.getRole())
+                && Role.isBusinessRole(role);
         if (adminViolationFlag) {
             logger.error(String.format("employee: %s is an admin and cannot request business roles such as %s",
                     email, requestedRole));
@@ -309,8 +355,8 @@ public class EmployeeService {
         }
 
         // check if business role is requesting for admin role indicator
-        boolean businessViolationFlag = ADMINISTRATOR.equals(role)
-                && (USER.equals(permissionEntity.getRole()) || ACCOUNTANT.equals(permissionEntity.getRole()));
+        boolean businessViolationFlag = Role.isAdminRole(role)
+                && Role.isBusinessRole(permissionEntity.getRole());
         if (businessViolationFlag) {
             logger.error(String.format("employee: %s has business roles and cannot request admin role", email));
             throw new GrantAdminRoleException("The user cannot combine administrative and business roles!");
@@ -318,11 +364,98 @@ public class EmployeeService {
 
     }
 
-    /** Deletes a given employee
-     * @param email the email of the employee to be deleted
+    /** Modifies the access for a given employee
+     * @param modifyAccessRequest the request containing employee info
      * */
-    public void deleteEmployee(String email) {
-        Optional<EmployeeEntity> optionalEmployeeEntity = employeeRepository.findByEmailIgnoreCase(email);
+    public void modifyEmployeeAccess(ModifyAccessRequest modifyAccessRequest) {
+        Optional<EmployeeEntity> optionalEmployee = employeeRepository
+                .findByEmailIgnoreCase(modifyAccessRequest.getEmail());
+        optionalEmployee.ifPresentOrElse((employeeEntity -> {
+
+            if ("LOCK".equalsIgnoreCase(modifyAccessRequest.getOperation())) {
+                logger.info(String.format("locking employee %s",
+                        modifyAccessRequest.getEmail()));
+                // check if request is to lock admin
+                checkAccessViolations(employeeEntity.getPermissionEntities());
+                // lock employee account
+                employeeRepository.updateLockFlagByEmailIgnoreCase(Boolean.TRUE, employeeEntity.getEmail());
+                // publish lock employee event
+                journeyEventPublisher.publishLockEmployeeAccessEvent(employeeEntity.getEmail());
+
+            } else if ("UNLOCK".equalsIgnoreCase(modifyAccessRequest.getOperation())) {
+                logger.info(String.format("unlocking employee %s",
+                        modifyAccessRequest.getEmail()));
+                // unlock employee account
+                employeeRepository.updateLockFlagByEmailIgnoreCase(Boolean.FALSE, employeeEntity.getEmail());
+                // publish unlock employee event
+                journeyEventPublisher.publishUnlockEmployeeAccessEvent(employeeEntity.getEmail());
+
+            } else {
+                logger.warn(String.format("access operation %s is invalid for employee %s ",
+                        modifyAccessRequest.getOperation(),
+                        modifyAccessRequest.getEmail()));
+            }
+
+        }), () -> {
+            // employee does not exist scenario
+            logger.error(String.format("employee %s was not found in database", modifyAccessRequest.getEmail()));
+            throw new EmployeeNotFoundException("User not found!");
+        });
+    }
+
+    /** Modifies the access for a given employee in an async friendly manner
+     * @param modifyAccessRequest the request containing employee info
+     * @param path the request uri tha was executed
+     * */
+    public void modifyEmployeeAccessAsync(ModifyAccessRequest modifyAccessRequest, String path) {
+        Optional<EmployeeEntity> optionalEmployee = employeeRepository
+                .findByEmailIgnoreCase(modifyAccessRequest.getEmail());
+        optionalEmployee.ifPresentOrElse((employeeEntity -> {
+
+            if ("LOCK".equalsIgnoreCase(modifyAccessRequest.getOperation())) {
+                logger.info(String.format("locking employee %s",
+                        modifyAccessRequest.getEmail()));
+                // check if request is to lock admin
+                checkAccessViolations(employeeEntity.getPermissionEntities());
+                // lock employee account
+                employeeRepository.updateLockFlagByEmailIgnoreCase(Boolean.TRUE, employeeEntity.getEmail());
+                // publish lock employee event
+                journeyEventPublisher.publishLockEmployeeAccessAsyncEvent(employeeEntity.getEmail(), path);
+
+            } else if ("UNLOCK".equalsIgnoreCase(modifyAccessRequest.getOperation())) {
+                logger.info(String.format("unlocking employee %s",
+                        modifyAccessRequest.getEmail()));
+                // unlock employee account
+                employeeRepository.updateLockFlagByEmailIgnoreCase(Boolean.FALSE, employeeEntity.getEmail());
+                // publish unlock employee event
+                journeyEventPublisher.publishUnlockEmployeeAccessAsyncEvent(employeeEntity.getEmail(), path);
+            } else {
+                logger.warn(String.format("access operation %s is invalid for employee %s ",
+                        modifyAccessRequest.getOperation(),
+                        modifyAccessRequest.getEmail()));
+            }
+
+        }), () -> {
+            // employee does not exist scenario
+            logger.error(String.format("employee %s was not found in database", modifyAccessRequest.getEmail()));
+            throw new EmployeeNotFoundException("User not found!");
+        });
+    }
+
+    private void checkAccessViolations(Set<PermissionEntity> permissionEntities) {
+        for (PermissionEntity permissionEntity : permissionEntities) {
+            if (Role.isAdminRole(permissionEntity.getRole())) {
+                throw new ModifyAdminAccessException("Can't lock the ADMINISTRATOR!");
+            }
+        }
+    }
+
+    /** Deletes a given employee
+     * @param adminEmail the email of the administrator
+     * @param employeeEmail the email of the employee to be deleted
+     * */
+    public void deleteEmployee(String adminEmail, String employeeEmail) {
+        Optional<EmployeeEntity> optionalEmployeeEntity = employeeRepository.findByEmailIgnoreCase(employeeEmail);
 
         optionalEmployeeEntity.ifPresentOrElse((employeeEntity) -> {
             // Admin cannot be deleted
@@ -335,9 +468,13 @@ public class EmployeeService {
             });
             // Delete employee
             employeeRepository.delete(employeeEntity);
+
+            // Publish delete employee event
+            journeyEventPublisher.publishDeleteEmployeeEvent(adminEmail, employeeEmail);
+
             }, () -> {
             // Respond with 404 Not Found
-            logger.error(String.format("employee: %s does not exist", email));
+            logger.error(String.format("employee: %s does not exist", employeeEmail));
             throw new EmployeeNotFoundException("User not found!");
         });
     }
