@@ -6,6 +6,7 @@ import account.database.repositories.EmployeeRepository;
 import account.utilities.Role;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,6 +22,7 @@ public class EmployeeDetailsServiceImpl implements UserDetailsService {
 
     private final EmployeeRepository employeeRepository;
 
+    @Autowired
     public EmployeeDetailsServiceImpl(EmployeeRepository employeeRepository) {
         this.employeeRepository = employeeRepository;
     }
@@ -51,7 +53,6 @@ public class EmployeeDetailsServiceImpl implements UserDetailsService {
 
     private UserDetails toUserDetails(EmployeeEntity entity) {
         logger.info("stored email: " + entity.getEmail());
-        logger.info("stored password: " + entity.getPassword());
         return User.builder()
                 .username(entity.getEmail())
                 .password(entity.getPassword())

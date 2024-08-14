@@ -29,7 +29,7 @@ import java.util.NoSuchElementException;
 @RestControllerAdvice
 public class ExceptionHandlerController extends ResponseEntityExceptionHandler {
 
-    private final HttpServletRequest request;
+    private final static Logger logger = LoggerFactory.getLogger(ExceptionHandlerController.class);
 
     private final HttpServletRequest httpServletRequest;
 

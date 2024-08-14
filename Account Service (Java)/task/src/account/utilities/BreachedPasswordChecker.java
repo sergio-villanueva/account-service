@@ -3,6 +3,7 @@ package account.utilities;
 import account.database.repositories.BreachedPasswordRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.password.CompromisedPasswordChecker;
 import org.springframework.security.authentication.password.CompromisedPasswordDecision;
@@ -16,6 +17,7 @@ public class BreachedPasswordChecker implements CompromisedPasswordChecker {
 
     private final BreachedPasswordRepository breachedPasswordRepository;
 
+    @Autowired
     public BreachedPasswordChecker(BreachedPasswordRepository breachedPasswordRepository) {
         this.breachedPasswordRepository = breachedPasswordRepository;
     }
