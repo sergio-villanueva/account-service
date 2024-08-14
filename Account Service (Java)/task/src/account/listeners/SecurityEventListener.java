@@ -64,20 +64,17 @@ public class SecurityEventListener {
      * @param path the request path where authentication failed
      * */
     private void handleFailedAuthenticationAttempt(String email, String path) {
-        // STEP 1: Only record events with registered employees
-        if (!employeeRepository.existsByEmailIgnoreCase(email))
-            return;
-        // STEP 2: Create event entity for failed login attempt
+        // STEP 1: Create event entity for failed login attempt
         final CommonEventEntity commonEventEntity = buildCommonEventEntity(LOGIN_FAILED, email, path);
-        // STEP 3: Save failed login event in database
+        // STEP 2: Save failed login event in database
         commonEventRepository.save(commonEventEntity);
         logger.info(String.format("successfully saved failed login attempt event from %s in database", email));
-        // STEP 4: Record failed login attempt in the cache
+        // STEP 3: Record failed login attempt in the cache
         authenticationAttemptService.loginFailed(email, path);
-        // STEP 5: Check if there is a brute force attempt
+        // STEP 4: Check if there is a brute force attempt
         if (isAccountLocked(email)) {
             logger.info("brute force attempt has been detected");
-            // STEP 6: Create event entity for brute force attempt if above check is true
+            // STEP 5: Create event entity for brute force attempt if above check is true
             commonEventRepository.save(buildCommonEventEntity(BRUTE_FORCE, email, path));
             logger.info(String.format("successfully saved failed brute force attempt event from %s in database", email));
         }
