@@ -364,10 +364,13 @@ public class EmployeeService {
 
     }
 
-    /** Modifies the access for a given employee
+    /**
+     * Modifies the access for a given employee
+     *
      * @param modifyAccessRequest the request containing employee info
-     * */
-    public EmployeeDTO modifyEmployeeAccess(ModifyAccessRequest modifyAccessRequest) {
+     * @param userDetails
+     */
+    public EmployeeDTO modifyEmployeeAccess(ModifyAccessRequest modifyAccessRequest, UserDetails userDetails) {
         Optional<EmployeeEntity> optionalEmployee = employeeRepository
                 .findByEmailIgnoreCase(modifyAccessRequest.getEmail());
         optionalEmployee.ifPresent((employeeEntity -> {
@@ -380,7 +383,7 @@ public class EmployeeService {
                 // lock employee account
                 employeeRepository.updateLockFlagByEmailIgnoreCase(Boolean.TRUE, employeeEntity.getEmail());
                 // publish lock employee event
-                journeyEventPublisher.publishLockEmployeeAccessEvent(employeeEntity.getEmail());
+                journeyEventPublisher.publishLockEmployeeAccessEvent(employeeEntity.getEmail(), userDetails.getUsername());
 
             } else if ("UNLOCK".equalsIgnoreCase(modifyAccessRequest.getOperation())) {
                 logger.info(String.format("unlocking employee %s",
@@ -388,7 +391,7 @@ public class EmployeeService {
                 // unlock employee account
                 employeeRepository.updateLockFlagByEmailIgnoreCase(Boolean.FALSE, employeeEntity.getEmail());
                 // publish unlock employee event
-                journeyEventPublisher.publishUnlockEmployeeAccessEvent(employeeEntity.getEmail());
+                journeyEventPublisher.publishUnlockEmployeeAccessEvent(employeeEntity.getEmail(), userDetails.getUsername());
 
             } else {
                 logger.warn(String.format("access operation %s is invalid for employee %s ",

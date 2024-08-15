@@ -58,10 +58,10 @@ public class JourneyEventPublisher {
         applicationEventPublisher.publishEvent(buildJourneyEvent(EventTypes.DELETE_USER, adminEmail, employeeEmail));
     }
 
-    public void publishLockEmployeeAccessEvent(String email) {
-        final String object = String.format("Lock user %s", email);
-        logger.info(String.format("publishing lock employee event for employee %s", email));
-        applicationEventPublisher.publishEvent(buildJourneyEvent(EventTypes.LOCK_USER, email, object));
+    public void publishLockEmployeeAccessEvent(String employeeEmail, String adminEmail) {
+        final String object = String.format("Lock user %s", employeeEmail);
+        logger.info(String.format("publishing lock employee event for employee %s", employeeEmail));
+        applicationEventPublisher.publishEvent(buildJourneyEvent(EventTypes.LOCK_USER, adminEmail, object));
     }
 
     public void publishLockEmployeeAccessAsyncEvent(String email, String path) {
@@ -70,10 +70,10 @@ public class JourneyEventPublisher {
         applicationEventPublisher.publishEvent(buildJourneyEvent(EventTypes.LOCK_USER, email, object, path));
     }
 
-    public void publishUnlockEmployeeAccessEvent(String email) {
-        final String object = String.format("Unlock user %s", email);
-        logger.info(String.format("publishing unlock employee event for employee %s", email));
-        applicationEventPublisher.publishEvent(buildJourneyEvent(EventTypes.UNLOCK_USER, email, object));
+    public void publishUnlockEmployeeAccessEvent(String employeeEmail, String adminEmail) {
+        final String object = String.format("Unlock user %s", employeeEmail);
+        logger.info(String.format("publishing unlock employee event for employee %s", employeeEmail));
+        applicationEventPublisher.publishEvent(buildJourneyEvent(EventTypes.UNLOCK_USER, adminEmail, object));
     }
 
     public void publishUnlockEmployeeAccessAsyncEvent(String email, String path) {

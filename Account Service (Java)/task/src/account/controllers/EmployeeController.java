@@ -99,9 +99,10 @@ public class EmployeeController {
 
     @PutMapping("/admin/user/access")
     @ResponseStatus(code = HttpStatus.OK)
-    public Object modifyAccess(@Valid @RequestBody ModifyAccessRequest modifyAccessRequest) {
+    public Object modifyAccess(@AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody ModifyAccessRequest modifyAccessRequest) {
         logger.info("start modify employee access journey");
-        EmployeeDTO employeeDTO = employeeService.modifyEmployeeAccess(modifyAccessRequest);
+        EmployeeDTO employeeDTO = employeeService.modifyEmployeeAccess(modifyAccessRequest, userDetails);
         logger.info(String.format("successfully modified employee access for %s", modifyAccessRequest.getEmail()));
         return responseBodyGenerator.buildModifyAccessResponseBody(modifyAccessRequest, employeeDTO);
     }
