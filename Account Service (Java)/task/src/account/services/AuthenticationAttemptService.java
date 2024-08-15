@@ -56,6 +56,7 @@ public class AuthenticationAttemptService {
                         .build(), path);
                 // log for identifying normal brute force event
                 logger.info(String.format("%s is now locked", email));
+                logger.info(String.format("%s has %d failed attempts so far", email, failedAttemptsCounter.get()));
             } catch (ModifyAdminAccessException e) {
                 // log for identifying brute force event on an administrator
                 logger.warn(String.format("administrator %s cannot be locked and has %d failed authentication attempts",

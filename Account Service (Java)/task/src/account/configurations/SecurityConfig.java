@@ -65,13 +65,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .httpBasic(Customizer.withDefaults())
+                .httpBasic(httpSecurityHttpBasicConfigurer ->
+                        httpSecurityHttpBasicConfigurer.authenticationEntryPoint(new RestAuthenticationEntryPoint()))
                 .csrf(AbstractHttpConfigurer::disable) // For Postman
-                .headers(headers -> headers.frameOptions(Customizer.withDefaults()).disable()) // For the H2 console
                 .exceptionHandling(handling -> {
-                    handling.authenticationEntryPoint(new RestAuthenticationEntryPoint());
                     handling.accessDeniedHandler(new RestAccessDeniedHandler());
                 }) // Handle auth errors
+                .headers(headers -> headers.frameOptions(Customizer.withDefaults()).disable()) // For the H2 console
                 .userDetailsService(userDetailsService)
                 .authorizeHttpRequests(auth -> auth  // manage access
                         .requestMatchers(HttpMethod.POST, "/api/auth/changepass").hasAnyAuthority(USER.getAuthority(), ACCOUNTANT.getAuthority(), ADMINISTRATOR.getAuthority())
@@ -88,7 +88,6 @@ public class SecurityConfig {
                         .requestMatchers("/error/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll() // enable for testing purposes
                         .requestMatchers("/h2-console/**").permitAll() // enable h2 console to inspect db
-
                 )
                 .sessionManagement(sessions -> sessions
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // no session
@@ -109,7 +108,7 @@ public class SecurityConfig {
         public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
             logger.error(String.format("unauthenticated client attempted to access resource %s", request.getRequestURI()));
             if (authException instanceof LockedException) {
-                setResponse(request, response, HttpStatus.UNAUTHORIZED, "User account is locked");
+                setResponse(request, response, HttpStatus.UNAUTHORIZED, authException.getMessage());
             } else {
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage());
             }
