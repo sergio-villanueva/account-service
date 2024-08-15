@@ -101,9 +101,9 @@ public class EmployeeController {
     @ResponseStatus(code = HttpStatus.OK)
     public Object modifyAccess(@Valid @RequestBody ModifyAccessRequest modifyAccessRequest) {
         logger.info("start modify employee access journey");
-        employeeService.modifyEmployeeAccess(modifyAccessRequest);
+        EmployeeDTO employeeDTO = employeeService.modifyEmployeeAccess(modifyAccessRequest);
         logger.info(String.format("successfully modified employee access for %s", modifyAccessRequest.getEmail()));
-        return responseBodyGenerator.buildModifyAccessResponseBody(modifyAccessRequest);
+        return responseBodyGenerator.buildModifyAccessResponseBody(modifyAccessRequest, employeeDTO);
     }
 
     /**

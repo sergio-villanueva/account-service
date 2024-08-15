@@ -44,13 +44,13 @@ public class EmployeeResponseBodyGenerator {
         return toRegistrationResponseBody(employeeDTO);
     }
 
-    public Object buildModifyAccessResponseBody(ModifyAccessRequest modifyAccessRequest) {
+    public Object buildModifyAccessResponseBody(ModifyAccessRequest modifyAccessRequest, EmployeeDTO dto) {
         String operation = "LOCK".equalsIgnoreCase(modifyAccessRequest.getOperation()) ?
                 "locked" : "UNLOCK".equalsIgnoreCase(modifyAccessRequest.getOperation()) ?
                 "unlocked" : null;
         return ModifyAccessResponseBody.builder()
                 .status(String.format("User %s %s!",
-                        modifyAccessRequest.getEmail(),
+                        dto.getEmail(),
                         operation))
                 .build();
     }

@@ -367,10 +367,10 @@ public class EmployeeService {
     /** Modifies the access for a given employee
      * @param modifyAccessRequest the request containing employee info
      * */
-    public void modifyEmployeeAccess(ModifyAccessRequest modifyAccessRequest) {
+    public EmployeeDTO modifyEmployeeAccess(ModifyAccessRequest modifyAccessRequest) {
         Optional<EmployeeEntity> optionalEmployee = employeeRepository
                 .findByEmailIgnoreCase(modifyAccessRequest.getEmail());
-        optionalEmployee.ifPresentOrElse((employeeEntity -> {
+        optionalEmployee.ifPresent((employeeEntity -> {
 
             if ("LOCK".equalsIgnoreCase(modifyAccessRequest.getOperation())) {
                 logger.info(String.format("locking employee %s",
@@ -396,11 +396,12 @@ public class EmployeeService {
                         modifyAccessRequest.getEmail()));
             }
 
-        }), () -> {
-            // employee does not exist scenario
+        }));
+
+        return toEmployeeDTO(optionalEmployee.orElseThrow(() -> {
             logger.error(String.format("employee %s was not found in database", modifyAccessRequest.getEmail()));
-            throw new EmployeeNotFoundException("User not found!");
-        });
+            return new EmployeeNotFoundException("User not found!");
+        }));
     }
 
     /** Modifies the access for a given employee in an async friendly manner
