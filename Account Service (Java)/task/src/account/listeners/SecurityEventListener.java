@@ -71,13 +71,7 @@ public class SecurityEventListener {
         logger.info(String.format("successfully saved failed login attempt event from %s in database", email));
         // STEP 3: Record failed login attempt in the cache
         authenticationAttemptService.loginFailed(email, path);
-        // STEP 4: Check if there is a brute force attempt
-        if (isAccountLocked(email)) {
-            logger.info("brute force attempt has been detected");
-            // STEP 5: Create event entity for brute force attempt if above check is true
-            commonEventRepository.save(buildCommonEventEntity(BRUTE_FORCE, email, path));
-            logger.info(String.format("successfully saved failed brute force attempt event from %s in database", email));
-        }
+
     }
 
     /** This listener is used to pick up successful authentication events
