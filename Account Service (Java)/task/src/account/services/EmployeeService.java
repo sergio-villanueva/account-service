@@ -384,6 +384,7 @@ public class EmployeeService {
                 employeeRepository.updateLockFlagByEmailIgnoreCase(Boolean.TRUE, employeeEntity.getEmail());
                 // publish lock employee event
                 journeyEventPublisher.publishLockEmployeeAccessEvent(employeeEntity.getEmail(), userDetails.getUsername());
+                logger.info(String.format("successfully locked employee access for employee %s", employeeEntity.getEmail()));
 
             } else if ("UNLOCK".equalsIgnoreCase(modifyAccessRequest.getOperation())) {
                 logger.info(String.format("unlocking employee %s",
@@ -392,6 +393,7 @@ public class EmployeeService {
                 employeeRepository.updateLockFlagByEmailIgnoreCase(Boolean.FALSE, employeeEntity.getEmail());
                 // publish unlock employee event
                 journeyEventPublisher.publishUnlockEmployeeAccessEvent(employeeEntity.getEmail(), userDetails.getUsername());
+                logger.info(String.format("successfully unlocked employee access for employee %s", employeeEntity.getEmail()));
 
             } else {
                 logger.warn(String.format("access operation %s is invalid for employee %s ",
@@ -425,6 +427,7 @@ public class EmployeeService {
                 employeeRepository.updateLockFlagByEmailIgnoreCase(Boolean.TRUE, employeeEntity.getEmail());
                 // publish lock employee event
                 journeyEventPublisher.publishLockEmployeeAccessAsyncEvent(employeeEntity.getEmail(), path);
+                logger.info(String.format("successfully locked employee access for employee %s", employeeEntity.getEmail()));
 
             } else if ("UNLOCK".equalsIgnoreCase(modifyAccessRequest.getOperation())) {
                 logger.info(String.format("unlocking employee %s",
@@ -433,6 +436,8 @@ public class EmployeeService {
                 employeeRepository.updateLockFlagByEmailIgnoreCase(Boolean.FALSE, employeeEntity.getEmail());
                 // publish unlock employee event
                 journeyEventPublisher.publishUnlockEmployeeAccessAsyncEvent(employeeEntity.getEmail(), path);
+                logger.info(String.format("successfully unlocked employee access for employee %s", employeeEntity.getEmail()));
+
             } else {
                 logger.warn(String.format("access operation %s is invalid for employee %s ",
                         modifyAccessRequest.getOperation(),
@@ -444,6 +449,7 @@ public class EmployeeService {
             logger.error(String.format("employee %s was not found in database", modifyAccessRequest.getEmail()));
             throw new EmployeeNotFoundException("User not found!");
         });
+
     }
 
     private void checkAccessViolations(Set<PermissionEntity> permissionEntities) {

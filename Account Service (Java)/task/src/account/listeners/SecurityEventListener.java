@@ -56,7 +56,6 @@ public class SecurityEventListener {
         final String path = httpServletRequest.getRequestURI();
         final String email = securityEvent.getAuthentication().getName();
         listenerExecutor.execute(() -> handleFailedAuthenticationAttempt(email, path));
-
     }
 
     /** This method is used to handle failed authentication attempts
@@ -71,7 +70,6 @@ public class SecurityEventListener {
         logger.info(String.format("successfully saved failed login attempt event from %s in database", email));
         // STEP 3: Record failed login attempt in the cache
         authenticationAttemptService.loginFailed(email, path);
-
     }
 
     /** This listener is used to pick up successful authentication events

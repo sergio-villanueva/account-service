@@ -56,7 +56,7 @@ public class AuthenticationAttemptService {
         // STEP 1: Increment the counter
         cache.putIfAbsent(email, failedAttemptsCounter.incrementAndGet());
         // STEP 2: Check for brute force attempt
-        if (failedAttemptsCounter.get() >= 5) {
+        if (failedAttemptsCounter.get() == 5) {
             try {
                 // STEP 3: Generate the brute force event
                 logger.info("brute force attempt has been detected");
