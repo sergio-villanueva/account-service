@@ -8,7 +8,7 @@ A REST API that is primarily used to manage employee payrolls. This project was 
 - H2 Database
 
 ## Actors
-There are three types of people who interact with the system:
+There are four types of people who interact with the system:
 - <b>User</b> : An employee who registers into the system to access their payroll information
 - <b>Accountant</b> : An employee who manages all payroll information
 - <b>Administrator</b> : An employee with special privileges for managing employee accounts
